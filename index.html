@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is This Address a Mailbox or Virtual Office?</title>
+<meta name="description" content="Check any ZIP code to see which addresses are registered commercial mail receiving agencies (CMRAs), UPS Stores, mailbox shops, or virtual offices. Built for attorneys and serve managers verifying process server offices near CT Corporation.">
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #38bdf8;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --ok: #34d399;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 1.8rem; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin-bottom: 28px; }
+  .search {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  input[type=text] {
+    flex: 1; min-width: 200px;
+    padding: 14px 16px; font-size: 1.1rem;
+    border-radius: 10px; border: 1px solid #334155;
+    background: var(--card); color: var(--text);
+  }
+  button {
+    padding: 14px 22px; font-size: 1rem; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #0f172a;
+  }
+  button:hover { filter: brightness(1.1); }
+  .card {
+    background: var(--card); border-radius: 12px; padding: 18px 20px;
+    margin-bottom: 14px; border-left: 4px solid var(--muted);
+  }
+  .card.cmra { border-left-color: var(--danger); }
+  .card.virtual { border-left-color: var(--warn); }
+  .card.real { border-left-color: var(--ok); }
+  .card h3 { margin: 0 0 4px; font-size: 1.1rem; }
+  .tag {
+    display: inline-block; font-size: 0.75rem; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tag.cmra { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .tag.virtual { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .tag.real { background: rgba(52,211,153,0.15); color: var(--ok); }
+  .addr { color: var(--muted); font-size: 0.95rem; }
+  .empty { color: var(--muted); font-style: italic; }
+  .note { font-size: 0.85rem; color: var(--muted); margin-top: 28px; }
+  .note a { color: var(--accent); }
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat { background: var(--card); border-radius: 10px; padding: 12px 16px; min-width: 120px; }
+  .stat b { display: block; font-size: 1.4rem; }
+  .stat span { font-size: 0.8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Is This Address a Mailbox or Virtual Office?</h1>
+  <p class="sub">Enter a ZIP code to see which addresses in that area are registered commercial mail receiving agencies (CMRAs), UPS Stores, mailbox shops, or virtual offices. No server names — just the locations, so you can verify whether a process server's listed office is real.</p>
+
+  <div class="search">
+    <input type="text" id="zip" placeholder="Enter ZIP code, e.g. 33324" maxlength="5" inputmode="numeric">
+    <button onclick="checkZip()">Check ZIP</button>
+  </div>
+
+  <div id="stats" class="stats" style="display:none;"></div>
+  <div id="results"></div>
+
+  <p class="note">Data is compiled from public records: USPS CMRA registry, known UPS Store and mailbox shop locations, and virtual office providers. This tool does not name individual process servers. It flags the address type so attorneys and serve managers can ask the right question: is there a staffed counter at this exact suite during business hours?</p>
+</div>
+
+<script>
+// Seed data: known CMRA / mailbox / virtual-office addresses in the 33324 cluster.
+// Expand this list as you verify more locations. Format: {zip, name, address, type}
+const LOCATIONS = [
+  {zip:"33324", name:"Plantation Postal", address:"9715 W Broward Blvd, Ste 322, Plantation, FL 33324", type:"cmra"},
+  {zip:"33324", name:"The UPS Store #4329", address:"151 N Nob Hill Rd, Ste 254, Plantation, FL 33324", type:"cmra"},
+  {zip:"33324", name:"The UPS Store", address:"1830 N University Dr, Ste 155, Plantation, FL 33324", type:"cmra"},
+  {zip:"33324", name:"Postal Studios", address:"1257 S Pine Island Rd, Plantation, FL 33324", type:"cmra"},
+  {zip:"33324", name:"Regus Virtual Office", address:"950 S Pine Island Rd, Ste 150, Plantation, FL 33324", type:"virtual"},
+  {zip:"33324", name:"The UPS Store (regional office)", address:"111 N Pine Island Rd, Ste 106, Plantation, FL 33324", type:"cmra"},
+  {zip:"33324", name:"The UPS Store", address:"8958 W State Road 84, Davie, FL 33324", type:"cmra"},
+  {zip:"33324", name:"CT Corporation System (real office)", address:"1200 S Pine Island Rd, Ste 250, Plantation, FL 33324", type:"real"}
+];
+
+const TYPE_LABEL = {
+  cmra: "Mailbox / CMRA",
+  virtual: "Virtual Office",
+  real: "Real Staffed Office"
+};
+
+function checkZip() {
+  const zip = document.getElementById('zip').value.trim();
+  const results = document.getElementById('results');
+  const stats = document.getElementById('stats');
+  results.innerHTML = '';
+  stats.style.display = 'none';
+
+  if (!/^\d{5}$/.test(zip)) {
+    results.innerHTML = '<p class="empty">Enter a 5-digit ZIP code.</p>';
+    return;
+  }
+
+  const matches = LOCATIONS.filter(l => l.zip === zip);
+  if (matches.length === 0) {
+    results.innerHTML = '<p class="empty">No flagged addresses found for ZIP ' + zip + ' in our current database. This does not mean none exist — the list is growing.</p>';
+    return;
+  }
+
+  const cmraCount = matches.filter(m => m.type === 'cmra').length;
+  const virtCount = matches.filter(m => m.type === 'virtual').length;
+  const realCount = matches.filter(m => m.type === 'real').length;
+
+  stats.style.display = 'flex';
+  stats.innerHTML =
+    '<div class="stat"><b style="color:var(--danger)">' + cmraCount + '</b><span>Mailbox / CMRA</span></div>' +
+    '<div class="stat"><b style="color:var(--warn)">' + virtCount + '</b><span>Virtual Office</span></div>' +
+    '<div class="stat"><b style="color:var(--ok)">' + realCount + '</b><span>Real Staffed Office</span></div>';
+
+  matches.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'card ' + m.type;
+    card.innerHTML =
+      '<span class="tag ' + m.type + '">' + TYPE_LABEL[m.type] + '</span>' +
+      '<h3>' + m.name + '</h3>' +
+      '<div class="addr">' + m.address + '</div>';
+    results.appendChild(card);
+  });
+}
+
+document.getElementById('zip').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkZip();
+});
+</script>
+</body>
+</html>
