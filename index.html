@@ -3,85 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Is This Address a Mailbox or Virtual Office?</title>
+<title>Real Office vs Mailbox Drop — ZIP Checker</title>
 <meta name="description" content="Check any ZIP code to see which addresses are registered commercial mail receiving agencies (CMRAs), UPS Stores, mailbox shops, or virtual offices. Built for attorneys and serve managers verifying process server offices near CT Corporation.">
 <style>
   :root {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --accent: #38bdf8;
+    --bg: #0b1220;
+    --card: #111827;
+    --accent: #22d3ee;
     --warn: #fbbf24;
     --danger: #f87171;
     --ok: #34d399;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --line: #1f2937;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #0f2740 0%, var(--bg) 55%);
     color: var(--text);
     line-height: 1.6;
   }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
-  h1 { font-size: 1.8rem; margin: 0 0 8px; }
-  .sub { color: var(--muted); margin-bottom: 28px; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 20px 72px; }
+  .badge {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); border: 1px solid rgba(34,211,238,0.35);
+    padding: 6px 10px; border-radius: 999px; margin-bottom: 14px;
+  }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 0 0 10px; line-height: 1.15; }
+  .sub { color: var(--muted); margin: 0 0 26px; font-size: 1.05rem; max-width: 760px; }
   .search {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px;
   }
   input[type=text] {
-    flex: 1; min-width: 200px;
-    padding: 14px 16px; font-size: 1.1rem;
-    border-radius: 10px; border: 1px solid #334155;
+    flex: 1; min-width: 220px;
+    padding: 15px 16px; font-size: 1.1rem;
+    border-radius: 12px; border: 1px solid var(--line);
     background: var(--card); color: var(--text);
   }
+  input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(34,211,238,0.15); }
   button {
-    padding: 14px 22px; font-size: 1rem; font-weight: 600;
-    border: none; border-radius: 10px; cursor: pointer;
-    background: var(--accent); color: #0f172a;
+    padding: 15px 24px; font-size: 1rem; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    background: var(--accent); color: #04202b;
   }
-  button:hover { filter: brightness(1.1); }
+  button:hover { filter: brightness(1.08); }
+  .stats { display: none; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 130px; }
+  .stat b { display: block; font-size: 1.5rem; }
+  .stat span { font-size: 0.78rem; color: var(--muted); }
   .card {
-    background: var(--card); border-radius: 12px; padding: 18px 20px;
-    margin-bottom: 14px; border-left: 4px solid var(--muted);
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 12px; border-left: 4px solid var(--muted);
   }
   .card.cmra { border-left-color: var(--danger); }
   .card.virtual { border-left-color: var(--warn); }
   .card.real { border-left-color: var(--ok); }
-  .card h3 { margin: 0 0 4px; font-size: 1.1rem; }
+  .card h3 { margin: 0 0 4px; font-size: 1.08rem; }
   .tag {
-    display: inline-block; font-size: 0.75rem; font-weight: 700;
-    padding: 3px 8px; border-radius: 6px; margin-bottom: 6px;
-    text-transform: uppercase; letter-spacing: 0.5px;
+    display: inline-block; font-size: 0.7rem; font-weight: 800;
+    padding: 4px 9px; border-radius: 7px; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
-  .tag.cmra { background: rgba(248,113,113,0.15); color: var(--danger); }
-  .tag.virtual { background: rgba(251,191,36,0.15); color: var(--warn); }
-  .tag.real { background: rgba(52,211,153,0.15); color: var(--ok); }
+  .tag.cmra { background: rgba(248,113,113,0.14); color: var(--danger); }
+  .tag.virtual { background: rgba(251,191,36,0.14); color: var(--warn); }
+  .tag.real { background: rgba(52,211,153,0.14); color: var(--ok); }
   .addr { color: var(--muted); font-size: 0.95rem; }
   .empty { color: var(--muted); font-style: italic; }
-  .note { font-size: 0.85rem; color: var(--muted); margin-top: 28px; }
+  .note { font-size: 0.86rem; color: var(--muted); margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
   .note a { color: var(--accent); }
-  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  .stat { background: var(--card); border-radius: 10px; padding: 12px 16px; min-width: 120px; }
-  .stat b { display: block; font-size: 1.4rem; }
-  .stat span { font-size: 0.8rem; color: var(--muted); }
+  .pill { display:inline-block; font-size:0.72rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 9px; margin: 0 6px 6px 0; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Is This Address a Mailbox or Virtual Office?</h1>
+  <span class="badge">Factual public-record check</span>
+  <h1>We don't use a mailbox. Do they?</h1>
   <p class="sub">Enter a ZIP code to see which addresses in that area are registered commercial mail receiving agencies (CMRAs), UPS Stores, mailbox shops, or virtual offices. No server names — just the locations, so you can verify whether a process server's listed office is real.</p>
 
   <div class="search">
-    <input type="text" id="zip" placeholder="Enter ZIP code, e.g. 33324" maxlength="5" inputmode="numeric">
+    <input type="text" id="zip" placeholder="Enter ZIP code, e.g. 33324" maxlength="5" inputmode="numeric" autocomplete="postal-code">
     <button onclick="checkZip()">Check ZIP</button>
   </div>
 
-  <div id="stats" class="stats" style="display:none;"></div>
+  <div id="stats" class="stats"></div>
   <div id="results"></div>
 
-  <p class="note">Data is compiled from public records: USPS CMRA registry, known UPS Store and mailbox shop locations, and virtual office providers. This tool does not name individual process servers. It flags the address type so attorneys and serve managers can ask the right question: is there a staffed counter at this exact suite during business hours?</p>
+  <p class="note">
+    Data is compiled from public records: USPS CMRA registry, known UPS Store and mailbox shop locations, and virtual office providers. This tool does not name individual process servers. It flags the address type so attorneys and serve managers can ask the right question: <b>is there a staffed counter at this exact suite during business hours?</b>
+    <span class="pill">CT Corp real office: 1200 S Pine Island Rd, Ste 250</span>
+    <span class="pill">Try 33324</span>
+  </p>
 </div>
 
 <script>
@@ -145,6 +158,12 @@ function checkZip() {
 
 document.getElementById('zip').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') checkZip();
+});
+
+// Auto-run 33324 on load so the page shows something immediately.
+window.addEventListener('load', function() {
+  document.getElementById('zip').value = '33324';
+  checkZip();
 });
 </script>
 </body>
